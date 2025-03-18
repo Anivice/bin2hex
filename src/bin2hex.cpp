@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
 
+        bool last_is_nl = false;
+
         do {
             buffer_256K.resize(SZ_256KB);
             current_page_size = read(fd_src, buffer_256K.data(), SZ_256KB);
@@ -60,8 +62,18 @@ int main(int argc, char *argv[])
                 debug::log("Error writing file: ", strerror(errno), "\n");
                 exit(EXIT_FAILURE);
             }
+
+            if (!hex_data.empty()) {
+                last_is_nl = hex_data.back() == '\n';
+            }
         } while (current_page_size > 0);
-        write(fd_dest, "\n", 1);
+
+        if (!last_is_nl) {
+            if (write(fd_dest, "\n", 1) != 1) {
+                debug::log("Error writing file: ", strerror(errno), "\n");
+                exit(EXIT_FAILURE);
+            }
+        }
 
         close(fd_src);
         close(fd_dest);

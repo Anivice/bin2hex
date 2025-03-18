@@ -53,10 +53,6 @@ int main(int argc, char *argv[])
                 buffer_256K.resize(current_page_size);
             }
 
-            if (buffer_256K.back() == '\n') {
-                buffer_256K.pop_back();
-            }
-
             const auto bin_data = bin2hex::hex2bin({buffer_256K.begin(), buffer_256K.end()});
             if (const auto write_len = write(fd_dest, bin_data.data(), bin_data.size());
                 write_len != static_cast<ssize_t>(bin_data.size()) )

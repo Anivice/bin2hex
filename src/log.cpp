@@ -6,6 +6,9 @@
 #include <cstdio>
 
 std::mutex debug::log_mutex;
+std::string debug::str_true = "True";
+std::string debug::str_false = "False";
+
 
 #if !defined(__DEBUG__) && defined(OVERRIDE_DEFAULT_SIGSEGV)
 // The following code overrides the default signal handler for SIGSEGV.

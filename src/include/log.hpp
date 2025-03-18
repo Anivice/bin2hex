@@ -7,6 +7,22 @@
 #include <unordered_map>
 #include <atomic>
 
+#define construct_simple_type_compare(type)                             \
+    template <typename T>                                               \
+    struct is_##type : std::false_type {};                              \
+    template <>                                                         \
+    struct is_##type<type> : std::true_type { };                        \
+    template <typename T>                                               \
+    constexpr bool is_##type##_v = is_##type<T>::value;
+
+#ifndef __LOG_TO_STDOUT__
+# define LOG_DEV std::cerr
+# define LOG_DEV_FILE (stderr)
+#else
+# define LOG_DEV std::cout
+# define LOG_DEV_FILE (stdout)
+#endif
+
 namespace debug {
     template <typename T, typename = void>
     struct is_container : std::false_type
@@ -70,6 +86,14 @@ namespace debug {
     template <typename T>
     constexpr bool is_string_v = is_string<T>::value;
 
+    construct_simple_type_compare(bool);
+
+    inline class lower_case_bool_t {} lower_case_bool;
+    construct_simple_type_compare(lower_case_bool_t);
+
+    inline class upper_case_bool_t {} upper_case_bool;
+    construct_simple_type_compare(upper_case_bool_t);
+
     template <typename Container>
     std::enable_if_t<is_container_v<Container> && !is_map_v<Container>
         && !is_unordered_map_v<Container>,
@@ -97,47 +121,64 @@ namespace debug {
         , void >
         print_container(const Container& container)
     {
-        std::cerr << "[";
+        LOG_DEV << "[";
         for (auto it = std::begin(container); it != std::end(container); ++it)
         {
             _log(*it);
             if (std::next(it) != std::end(container)) {
-                std::cerr << ", ";
+                LOG_DEV << ", ";
             }
         }
-        std::cerr << "]";
+        LOG_DEV << "]";
     }
 
     template <typename Map>
     std::enable_if_t < debug::is_map_v<Map> || debug::is_unordered_map_v<Map>, void >
         print_container(const Map& map)
     {
-        std::cerr << "{";
+        LOG_DEV << "{";
         for (auto it = std::begin(map); it != std::end(map); ++it)
         {
             _log(it->first);
-            std::cerr << ": ";
+            LOG_DEV << ": ";
             _log(it->second);
             if (std::next(it) != std::end(map)) {
-                std::cerr << ", ";
+                LOG_DEV << ", ";
             }
         }
-        std::cerr << "}";
+        LOG_DEV << "}";
     }
+
+    extern std::string str_true;
+    extern std::string str_false;
 
     template <typename ParamType> void _log(const ParamType& param)
     {
         if constexpr (debug::is_string_v<ParamType>) {
             // Handle std::string and const char*
-            std::cerr << param;
+            LOG_DEV << param;
         }
         else if constexpr (debug::is_container_v<ParamType>) {
             // Handle containers
             debug::print_container(param);
         }
+        else if constexpr (debug::is_bool_v<ParamType>) {
+            // Handle bool
+            LOG_DEV << (param ? str_true : str_false);
+        }
+        else if constexpr (debug::is_lower_case_bool_t_v<ParamType>) {
+            // change bool output
+            str_true = "true";
+            str_false = "false";
+        }
+        else if constexpr (debug::is_upper_case_bool_t_v<ParamType>) {
+            // change bool output
+            str_true = "True";
+            str_false = "False";
+        }
         else {
             // Handle other types
-            std::cerr << param;
+            LOG_DEV << param;
         }
     }
 
@@ -150,11 +191,11 @@ namespace debug {
 
     template <typename... Args> void log(const Args &...args)
     {
-        setvbuf(stderr, nullptr, _IONBF, 0);
+        setvbuf(LOG_DEV_FILE, nullptr, _IONBF, 0);
         std::lock_guard<std::mutex> lock(log_mutex);
         debug::_log(args...);
-        std::cerr << std::flush;
-        fflush(stderr);
+        LOG_DEV << std::flush;
+        fflush(LOG_DEV_FILE);
     }
 }
 

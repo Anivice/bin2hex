@@ -1,6 +1,10 @@
 #include "pipe.hpp"
 #include "log.hpp"
 
+#include <stdexcept>
+
+constexpr int max_line_char_num = 64;
+
 namespace bin2hex {
     char hex_table [] = {
         '0', 0x00,
@@ -31,7 +35,11 @@ namespace bin2hex {
     };
 
     bool is_valid(const char hex) {
+#ifndef LOWER_CASE_MAP
         return ((hex >= '0' && hex <= '9') || (hex >= 'A' && hex <= 'F'));
+#else
+        return ((hex >= '0' && hex <= '9') || (hex >= 'a' && hex <= 'f'));
+#endif // LOWER_CASE_MAP
     }
 
     char c_hex2bin(const char hex_a, const char hex_b)
@@ -39,7 +47,7 @@ namespace bin2hex {
         char result = 0;
 
         if (!is_valid(hex_a) || !is_valid(hex_b)) {
-            throw std::invalid_argument("Invalid hex string");
+            throw std::invalid_argument("Invalid hex string pair `" + std::to_string((int)hex_a) + "d+" + std::to_string((int)hex_b) + "d`");
         }
 
         auto find_in_table = [](const char hex)->char
@@ -50,7 +58,7 @@ namespace bin2hex {
                 }
             }
 
-            throw std::invalid_argument("Invalid hex");
+            throw std::invalid_argument("Invalid hex code");
         };
 
         result = find_in_table(hex_b);
@@ -68,7 +76,7 @@ namespace bin2hex {
                 }
             }
 
-            throw std::invalid_argument("Invalid hex");
+            throw std::invalid_argument("Invalid binary code");
         };
 
         const char bin_a = static_cast<char>(bin >> 4) & 0x0F;
@@ -80,27 +88,58 @@ namespace bin2hex {
 
     std::string bin2hex(const std::vector < char > & vec)
     {
+        int cur_line_char_num = 0;
+
         std::string result;
         char buffer [3] { };
         for (const auto & bin : vec) {
             c_bin2hex(bin, buffer);
             result += buffer;
+            cur_line_char_num += 2;
+
+            if (cur_line_char_num == max_line_char_num) {
+                result += "\n";
+                cur_line_char_num = 0;
+            }
         }
 
         return result;
     }
 
     std::vector < char > hex2bin(const std::string & hex) {
-        if (hex.length() & 0x01) {
-            throw std::invalid_argument("Invalid hex data alignment");
+        try {
+            std::vector < char > ret;
+
+            for (std::size_t i = 0; i < hex.length(); i += 2) 
+            {
+                char code_1 = hex[i], code_2 = hex[i + 1];
+                if (code_1 == '\n') 
+                {
+                    if ((i + 1) == hex.length()) {
+                        break;
+                    }
+
+                    i += 1;
+                    code_1 = hex[i];
+                    code_2 = hex[i + 1];
+                }
+
+                if (code_2 == '\n') {
+                    i += 1;
+
+                    if ((i + 1) >= hex.length()) {
+                        throw std::invalid_argument("Invalid hex alignment");
+                    }
+
+                    code_2 = hex[i + 1];
+                }
+
+                ret.emplace_back(c_hex2bin(code_1, code_2));
+            }
+
+            return ret;
+        } catch (std::out_of_range &) {
+            throw std::invalid_argument("Invalid hex alignment");
         }
-
-        std::vector < char > ret;
-
-        for (std::size_t i = 0; i < hex.length(); i += 2) {
-            ret.emplace_back(c_hex2bin(hex[i], hex[i + 1]));
-        }
-
-        return ret;
     }
 }
