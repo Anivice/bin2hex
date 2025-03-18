@@ -13,12 +13,21 @@ namespace bin2hex {
         '7', 0x07,
         '8', 0x08,
         '9', 0x09,
+#ifndef LOWER_CASE_MAP
         'A', 0x0A,
         'B', 0x0B,
         'C', 0x0C,
         'D', 0x0D,
         'E', 0x0E,
         'F', 0x0F,
+#else
+        'a', 0x0A,
+        'b', 0x0B,
+        'c', 0x0C,
+        'd', 0x0D,
+        'e', 0x0E,
+        'f', 0x0F,
+#endif // LOWER_CASE_MAP
     };
 
     bool is_valid(const char hex) {

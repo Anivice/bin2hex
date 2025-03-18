@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <cstring>
+#include <unistd.h>
 
 #define SZ_256KB (256 * 1024)
 
@@ -50,6 +51,10 @@ int main(int argc, char *argv[])
 
             if (current_page_size != SZ_256KB) {
                 buffer_256K.resize(current_page_size);
+            }
+
+            if (buffer_256K.back() == '\n') {
+                buffer_256K.pop_back();
             }
 
             const auto bin_data = bin2hex::hex2bin({buffer_256K.begin(), buffer_256K.end()});

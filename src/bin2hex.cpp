@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <cstring>
+#include <unistd.h>
 
 #define SZ_256KB (256 * 1024)
 
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
             }
         } while (current_page_size > 0);
+        write(fd_dest, "\n", 1);
 
         close(fd_src);
         close(fd_dest);

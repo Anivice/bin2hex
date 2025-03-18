@@ -7,7 +7,7 @@
 
 std::mutex debug::log_mutex;
 
-#ifndef __DEBUG__
+#if !defined(__DEBUG__) && defined(OVERRIDE_DEFAULT_SIGSEGV)
 // The following code overrides the default signal handler for SIGSEGV.
 // Debug has sanitizer support for SIGSEGV instead
 
